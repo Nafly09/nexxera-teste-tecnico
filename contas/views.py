@@ -1,15 +1,19 @@
-from typing import OrderedDict
+from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.decorators import APIView, api_view
+from rest_framework.decorators import APIView
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_404_NOT_FOUND,
     HTTP_200_OK,
 )
-
-from contas.models import Extract, Transactions, Accounts
+from contas.services.update_extract_with_transaction import (
+    update_extract_with_transaction,
+)
+from contas.services.filter_extract_by_type import filter_extract_by_type
+from contas.models import Extract, Accounts
 from contas.serializers import (
     AccountsSerializer,
     ExtractSerializer,
@@ -19,95 +23,62 @@ from contas.serializers import (
 
 class AccountsView(APIView):
     def post(self, request: Request):
-        serializer = AccountsSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        found_account = Accounts.objects.filter(
-            account_owner=serializer.validated_data["account_owner"]
-        )
-
-        if found_account:
+        try:
+            serializer = AccountsSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            account = Accounts.objects.create(**serializer.validated_data)
+            serializer = AccountsSerializer(account)
+            return Response(serializer.data, HTTP_201_CREATED)
+        except IntegrityError:
             return Response(
                 {"message": "Requested account owner already exists"},
                 HTTP_422_UNPROCESSABLE_ENTITY,
             )
-        account = Accounts.objects.create(**serializer.validated_data)
-        serializer = AccountsSerializer(account)
 
-        return Response(serializer.data, HTTP_201_CREATED)
-
-    def get(self, request: Request):
+    def get(self, _: Request):
         found_accounts = Accounts.objects.all()
         serializer = [AccountsSerializer(account).data for account in found_accounts]
         return Response(serializer)
 
     def patch(self, request: Request, action: None, account_id):
-        serializer = UpdateAccountBalanceSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        found_account = Accounts.objects.get(account_id=account_id)
+        try:
+            serializer = UpdateAccountBalanceSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            found_account = Accounts.objects.get(account_id=account_id)
+            update_extract_with_transaction(
+                action, found_account, serializer, account_id
+            )
+            found_account.save()
+            serializer = AccountsSerializer(found_account)
 
-        if not found_account:
+            return Response(serializer.data, HTTP_200_OK)
+        except ValidationError:
             return Response(
-                {"message": "Account for the requested account_id does not exist"},
+                {"message": "Requested account_id is not a valid UUID"},
+                HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        except Accounts.DoesNotExist:
+            return Response(
+                {"message": "Requested account_id does not exist"},
                 HTTP_404_NOT_FOUND,
             )
-        if action == "credit":
-            found_account.balance += serializer.validated_data["balance"]
-
-            current_extract, _ = Extract.objects.update_or_create(
-                extract_account_id=account_id,
-                defaults={"current_account_balance": found_account.balance},
-            )
-
-            transaction = {
-                "transaction_type": "credit",
-                "transaction_value": serializer.validated_data["balance"],
-            }
-            Transactions.objects.create(
-                **transaction,
-                transaction_account=found_account,
-                transaction_extract=current_extract
-            )
-
-        if action == "debit":
-            found_account.balance -= serializer.validated_data["balance"]
-            current_extract, _ = Extract.objects.update_or_create(
-                extract_account_id=account_id,
-                defaults={"current_account_balance": found_account.balance},
-            )
-
-            transaction = {
-                "transaction_type": "debit",
-                "transaction_value": serializer.validated_data["balance"],
-            }
-            Transactions.objects.create(
-                **transaction,
-                transaction_account=found_account,
-                transaction_extract=current_extract
-            )
-        found_account.save()
-        serializer = AccountsSerializer(found_account)
-
-        return Response(serializer.data, HTTP_200_OK)
 
 
 class ExtractView(APIView):
     def get(self, request: Request, account_id: None):
-        extract: Extract = Extract.objects.get(extract_account_id=account_id)
-        serializer = ExtractSerializer(extract)
-        transaction_type = request.GET.get("type")
-        if transaction_type == "debit":
-            only_debits = [
-                dict(data)
-                for data in serializer.data["transactions"]
-                if data["transaction_type"] == "debit"
-            ]
-            serializer._data["transactions"] = only_debits
-        if transaction_type == "credit":
-            only_credits = [
-                dict(data)
-                for data in serializer.data["transactions"]
-                if data["transaction_type"] == "credit"
-            ]
-            serializer._data["transactions"] = only_credits
-        return Response(serializer.data)
+        try:
+            extract: Extract = Extract.objects.get(extract_account_id=account_id)
+            serializer = ExtractSerializer(extract)
+            transaction_type = request.GET.get("transaction_type")
+            filter_extract_by_type(transaction_type, serializer)
+            return Response(serializer.data)
+        except ValidationError:
+            return Response(
+                {"message": "Requested account_id is not a valid UUID"},
+                HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        except Extract.DoesNotExist:
+            return Response(
+                {"message": "Requested account_id does not exist"},
+                HTTP_404_NOT_FOUND,
+            )
