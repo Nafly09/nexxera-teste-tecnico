@@ -1,11 +1,9 @@
+from typing import OrderedDict
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.decorators import APIView, api_view
 from rest_framework.status import (
     HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_403_FORBIDDEN,
     HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_404_NOT_FOUND,
     HTTP_200_OK,
@@ -73,8 +71,6 @@ class AccountsView(APIView):
 
         if action == "debit":
             found_account.balance -= serializer.validated_data["balance"]
-            # new_balance = found_account.balance - serializer.validated_data["balance"]
-
             current_extract, _ = Extract.objects.update_or_create(
                 extract_account_id=account_id,
                 defaults={"current_account_balance": found_account.balance},
@@ -96,7 +92,22 @@ class AccountsView(APIView):
 
 
 class ExtractView(APIView):
-    def get(self, _, account_id: None):
-        extract = Extract.objects.get(extract_account_id=account_id)
+    def get(self, request: Request, account_id: None):
+        extract: Extract = Extract.objects.get(extract_account_id=account_id)
         serializer = ExtractSerializer(extract)
+        transaction_type = request.GET.get("type")
+        if transaction_type == "debit":
+            only_debits = [
+                dict(data)
+                for data in serializer.data["transactions"]
+                if data["transaction_type"] == "debit"
+            ]
+            serializer._data["transactions"] = only_debits
+        if transaction_type == "credit":
+            only_credits = [
+                dict(data)
+                for data in serializer.data["transactions"]
+                if data["transaction_type"] == "credit"
+            ]
+            serializer._data["transactions"] = only_credits
         return Response(serializer.data)
