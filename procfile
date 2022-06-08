@@ -1,0 +1,1 @@
+web: gunicorn nexxera_contas.wsgi

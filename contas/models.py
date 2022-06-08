@@ -26,7 +26,9 @@ class Transactions(models.Model):
     transaction_value = models.FloatField()
     transaction_date = models.DateTimeField(auto_now=True)
     transaction_description = models.CharField(max_length=255)
-    transaction_account = models.ForeignKey(Accounts, on_delete=models.CASCADE)
+    transaction_account = models.ForeignKey(
+        Accounts, on_delete=models.CASCADE, related_name="all_transactions"
+    )
     transaction_extract = models.ForeignKey(
         Extract, on_delete=models.CASCADE, related_name="transactions"
     )

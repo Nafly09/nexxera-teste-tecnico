@@ -1,0 +1,19 @@
+Name                                                     Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------------------
+contas/__init__.py                                           0      0   100%
+contas/admin.py                                              1      0   100%
+contas/apps.py                                               4      0   100%
+contas/migrations/0001_initial.py                            7      0   100%
+contas/migrations/0002_alter_accounts_account_owner.py       4      0   100%
+contas/migrations/__init__.py                                0      0   100%
+contas/models.py                                            23      0   100%
+contas/serializers.py                                       19      0   100%
+contas/services/filter_extract_by_type.py                    7      0   100%
+contas/services/update_extract_with_transaction.py          12      0   100%
+contas/urls.py                                               3      0   100%
+contas/views.py                                             49      0   100%
+nexxera_contas/__init__.py                                   0      0   100%
+nexxera_contas/settings.py                                  18      0   100%
+nexxera_contas/urls.py                                       3      0   100%
+--------------------------------------------------------------------------------------
+TOTAL                                                      150      0   100%

@@ -1,0 +1,6 @@
+[run]
+source = .
+omit = venv/*, */asgi.py, */wsgi.py, manage.py, */tests.py
+
+[report]
+show_missing = True
