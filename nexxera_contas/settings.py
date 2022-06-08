@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "nexxera-accounts.herokuapp.com"]
+ALLOWED_HOSTS = ["127.0.0.1", "nexxera-accounts.herokuapp.com"]
 
 
 # Application definition
