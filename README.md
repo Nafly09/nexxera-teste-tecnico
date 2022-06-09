@@ -126,12 +126,13 @@ Essa rota recebe dois parâmetros sendo eles:
   <br>
   
   - <b>transaction_type</b>: Nesse parâmetro você tem 2 opções para escolher, crédito ou débito. Crédito para adicionar saldo em conta e débito para retirar o saldo em conta.
-  - <b>account_id</b>: Nesse parâmetro você deve informar o ID da conta na qual você deseja fazer a transação.
+  - <b>account_id</b>: Nesse parâmetro você deve informar o ID da conta na qual você deseja fazer a transação. Você também pode passar na requisição a chave description e adicionar uma descrição á transação para organizar melhor, porém ela é opcional e caso não informado é retornado apenas uma string vazia.
   <br>
   
 ```json
 {
-	"balance": 50
+	"balance": 50,
+	"description": 'Pix da firma'
 }
 ```
 <br>
