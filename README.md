@@ -132,7 +132,7 @@ Essa rota recebe dois parâmetros sendo eles:
 ```json
 {
 	"balance": 50,
-	"description": 'Pix da firma'
+	"transaction_description": "Pix da firma"
 }
 ```
 <br>
