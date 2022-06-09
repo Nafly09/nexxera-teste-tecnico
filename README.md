@@ -45,7 +45,7 @@ $ ./manage.py runserver
 
 ## 🛠 Organização para ambiente de produção
 <p>Caso tenha apenas interesse em utilizar a api, ela está disponibilizada para ser utilizado em um servidor heroku, segue o endpoint público para utilização:</p>
-<b>nexxera-accounts.herokuapp.com/api/accounts/</b>
+<b>nexxera-accounts.herokuapp.com/</b>
 <br>
 <p>Divirta-se</p>
 
